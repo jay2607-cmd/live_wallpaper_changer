@@ -1,24 +1,30 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:flutter/services.dart';
 import 'package:async_wallpaper/async_wallpaper.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class ChangeWallpaper extends StatefulWidget {
-  const ChangeWallpaper({super.key});
+
+  final String path;
+  const ChangeWallpaper({super.key, required this.path});
 
   @override
   State<ChangeWallpaper> createState() => ChangeWallpaperState();
 }
 
 class ChangeWallpaperState extends State<ChangeWallpaper> {
+
+
   String _platformVersion = 'Unknown';
   String _liveWallpaper = 'Unknown';
-  String liveUrl =
-      'https://github.com/codenameakshay/sample-data/raw/main/video3.mp4';
+
+  // Update the asset path to match your video asset.
+  late String assetVideoPath;
 
   late bool goToHome;
+  String tempVideoFileName = 'temp_video.mp4'; // Unique temporary file name
 
   @override
   void initState() {
@@ -50,23 +56,41 @@ class ChangeWallpaperState extends State<ChangeWallpaper> {
   }
 
   Future<void> setLiveWallpaper() async {
+    assetVideoPath = widget.path;
+
     setState(() {
       _liveWallpaper = 'Loading';
     });
     String result;
-    var file = await DefaultCacheManager().getSingleFile(liveUrl);
-    // Platform messages may fail, so we use a try/catch PlatformException.
+
     try {
-      result = await AsyncWallpaper.setLiveWallpaper(
-        filePath: file.path,
-        goToHome: goToHome,
-        toastDetails: ToastDetails.success(),
-        errorToastDetails: ToastDetails.error(),
-      )
-          ? 'Wallpaper set'
-          : 'Failed to get wallpaper.';
+      // Generate a unique temporary file name for each video.
+      final appDocumentsDirectory = await getApplicationDocumentsDirectory();
+      final tempVideoFile = File('${appDocumentsDirectory.path}/$tempVideoFileName');
+
+      if (!tempVideoFile.existsSync() || assetVideoPath != tempVideoFileName) {
+        // Clear cache and copy the new video asset to the temporary file.
+        final ByteData data = await rootBundle.load(assetVideoPath);
+        final List<int> bytes = data.buffer.asUint8List();
+        await tempVideoFile.writeAsBytes(bytes);
+      }
+
+      // Check if the file exists before trying to delete it.
+      if (tempVideoFile.existsSync()) {
+        // Use the path of the temporary video file to set the wallpaper.
+        result = await AsyncWallpaper.setLiveWallpaper(
+          filePath: tempVideoFile.path,
+          goToHome: goToHome,
+          toastDetails: ToastDetails.success(),
+          errorToastDetails: ToastDetails.error(),
+        )
+            ? 'Wallpaper set'
+            : 'Failed to set wallpaper.';
+      } else {
+        result = 'File not found.';
+      }
     } on PlatformException {
-      result = 'Failed to get wallpaper.';
+      result = 'Failed to set wallpaper.';
     }
 
     // If the widget was removed from the tree while the asynchronous platform
@@ -79,37 +103,40 @@ class ChangeWallpaperState extends State<ChangeWallpaper> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plugin example app'),
-      ),
-      body: SingleChildScrollView(
-        child: SizedBox(
-          child: Column(
-            children: [
-              Center(
-                child: Text('Running on: $_platformVersion\n'),
-              ),
-              SwitchListTile(
-                  title: const Text('Go to home'),
-                  value: goToHome,
-                  onChanged: (value) {
-                    setState(() {
-                      goToHome = value;
-                    });
-                  }),
-              ElevatedButton(
-                onPressed: setLiveWallpaper,
-                child: _liveWallpaper == 'Loading'
-                    ? const CircularProgressIndicator()
-                    : const Text('Set live wallpaper'),
-              ),
-              Center(
-                child: Text('Wallpaper status: $_liveWallpaper\n'),
-              ),
-            ],
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Plugin example app'),
+        ),
+        body: SingleChildScrollView(
+          child: SizedBox(
+            child: Column(
+              children: [
+                Center(
+                  child: Text('Running on: $_platformVersion\n'),
+                ),
+                SwitchListTile(
+                    title: const Text('Go to home'),
+                    value: goToHome,
+                    onChanged: (value) {
+                      setState(() {
+                        goToHome = value;
+                      });
+                    }),
+                ElevatedButton(
+                  onPressed: setLiveWallpaper,
+                  child: _liveWallpaper == 'Loading'
+                      ? const CircularProgressIndicator()
+                      : const Text('Set live wallpaper'),
+                ),
+                Center(
+                  child: Text('Wallpaper status: $_liveWallpaper\n'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

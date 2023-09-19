@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_wallpaper/asset_videos.dart';
 import 'package:video_wallpaper/change_wallpaper.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -19,7 +20,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ElevatedButton(
                   onPressed: () {
                     Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => ChangeWallpaper()));
+                        MaterialPageRoute(builder: (context) => AssetVideos()));
                   },
                   child: Text("Live Wallpaper"))
             ],
