@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:async_wallpaper/async_wallpaper.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 
 class ChangeWallpaper extends StatefulWidget {
-
   final String path;
   const ChangeWallpaper({super.key, required this.path});
 
@@ -15,16 +13,13 @@ class ChangeWallpaper extends StatefulWidget {
 }
 
 class ChangeWallpaperState extends State<ChangeWallpaper> {
-
-
   String _platformVersion = 'Unknown';
   String _liveWallpaper = 'Unknown';
 
-  // Update the asset path to match your video asset.
-  late String assetVideoPath;
+  // Update the video file path to match your asset file.
+  String assetVideoPath = '/data/user/0/com.example.video_wallpaper/cache/file_picker/VID_20230915_170328.mp4';
 
   late bool goToHome;
-  String tempVideoFileName = 'temp_video.mp4'; // Unique temporary file name
 
   @override
   void initState() {
@@ -56,39 +51,21 @@ class ChangeWallpaperState extends State<ChangeWallpaper> {
   }
 
   Future<void> setLiveWallpaper() async {
-    assetVideoPath = widget.path;
-
     setState(() {
       _liveWallpaper = 'Loading';
     });
     String result;
 
+    // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      // Generate a unique temporary file name for each video.
-      final appDocumentsDirectory = await getApplicationDocumentsDirectory();
-      final tempVideoFile = File('${appDocumentsDirectory.path}/$tempVideoFileName');
-
-      if (!tempVideoFile.existsSync() || assetVideoPath != tempVideoFileName) {
-        // Clear cache and copy the new video asset to the temporary file.
-        final ByteData data = await rootBundle.load(assetVideoPath);
-        final List<int> bytes = data.buffer.asUint8List();
-        await tempVideoFile.writeAsBytes(bytes);
-      }
-
-      // Check if the file exists before trying to delete it.
-      if (tempVideoFile.existsSync()) {
-        // Use the path of the temporary video file to set the wallpaper.
-        result = await AsyncWallpaper.setLiveWallpaper(
-          filePath: tempVideoFile.path,
-          goToHome: goToHome,
-          toastDetails: ToastDetails.success(),
-          errorToastDetails: ToastDetails.error(),
-        )
-            ? 'Wallpaper set'
-            : 'Failed to set wallpaper.';
-      } else {
-        result = 'File not found.';
-      }
+      result = await AsyncWallpaper.setLiveWallpaper(
+        filePath: widget.path,
+        goToHome: goToHome,
+        toastDetails: ToastDetails.success(),
+        errorToastDetails: ToastDetails.error(),
+      )
+          ? 'Wallpaper set'
+          : 'Failed to set wallpaper.';
     } on PlatformException {
       result = 'Failed to set wallpaper.';
     }
@@ -102,7 +79,6 @@ class ChangeWallpaperState extends State<ChangeWallpaper> {
       _liveWallpaper = result;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {

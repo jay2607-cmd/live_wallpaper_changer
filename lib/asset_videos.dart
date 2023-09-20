@@ -1,7 +1,14 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'asset_videoplayer.dart';
+import 'change_wallpaper.dart';
 import 'model/video_item.dart';
 
 class AssetVideos extends StatefulWidget {
@@ -25,18 +32,41 @@ class _AssetVideosState extends State<AssetVideos> {
     // Add the remaining videos here
   ];
 
+  List<String?> _thumbnailFiles = List.filled(9, null); // Initialize with nulls
+
   VideoPlayerController? _controller;
 
-  void _playVideo(String assetPath) {
-    if (_controller != null) {
-      _controller!.dispose();
+  @override
+  void initState() {
+    super.initState();
+    for (int i = 0; i < videoItems.length; i++) {
+      generateThumbnail(i, videoItems[i].assetPath);
     }
+  }
 
-    _controller = VideoPlayerController.asset(assetPath)
-      ..initialize().then((_) {
-        setState(() {});
-        _controller!.play();
-      });
+  Future<File> copyAssetFile(String assetFileName) async {
+    Directory tempDir = await getTemporaryDirectory();
+    final byteData = await rootBundle.load(assetFileName);
+
+    File videoThumbnailFile = File("${tempDir.path}/$assetFileName")
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(byteData.buffer
+          .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
+    return videoThumbnailFile;
+  }
+
+  generateThumbnail(int index, String path) async {
+    File videoTempFile1 = await copyAssetFile(path);
+
+    _thumbnailFiles[index] = await VideoThumbnail.thumbnailFile(
+      video: videoTempFile1.path,
+      thumbnailPath: (await getTemporaryDirectory()).path,
+      imageFormat: ImageFormat.PNG,
+      maxHeight: 200,
+      maxWidth: 200
+    );
+
+    setState(() {});
   }
 
   @override
@@ -47,27 +77,44 @@ class _AssetVideosState extends State<AssetVideos> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: ListView.builder(
-        itemCount: videoItems.length,
-        itemBuilder: (context, index) {
-          final videoItem = videoItems[index];
-          return ListTile(
-            title: Text(videoItem.name),
-            onTap: () {
-              // Handle video playback here
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => VideoPlayerScreen(videoAssetPath: videoItem.assetPath),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Video Thumbnails'),
+        ),
+        body: GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.72,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10),
+          itemCount: videoItems.length,
+          itemBuilder: (context, index) {
+            final videoItem = videoItems[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => VideoPlayerScreen(videoAssetPath: videoItems[index].assetPath,)));
+              },
+              child: Card(
+                child: Column(
+                  children: [
+                    if (_thumbnailFiles[index] != null)
+                      Image.file(File(_thumbnailFiles[index]!)),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(videoItem.name),
+                    ),
+                  ],
                 ),
-              );
-
-            },
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
