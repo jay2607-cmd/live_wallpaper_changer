@@ -1,4 +1,7 @@
+import 'package:async_wallpaper/async_wallpaper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_wallpaper/change_wallpaper.dart';
@@ -15,6 +18,8 @@ class VideoPlayerScreen2 extends StatefulWidget {
 
 class _VideoPlayerScreen2State extends State<VideoPlayerScreen2> {
   late ChewieController _chewieController;
+  String _platformVersion = 'Unknown';
+  String _liveWallpaper = 'Unknown';
 
   @override
   void initState() {
@@ -30,24 +35,68 @@ class _VideoPlayerScreen2State extends State<VideoPlayerScreen2> {
   }
 
   void _initializeChewieController() {
-    double aspectRatio = 16 / 9; // Default aspect ratio, you can adjust it
-
-    // Calculate the aspect ratio based on screen dimensions
-    if (MediaQuery.of(context).orientation == Orientation.portrait) {
-      // Portrait mode
-      aspectRatio = MediaQuery.of(context).size.width / MediaQuery.of(context).size.height;
-    } else {
-      // Landscape mode
-      aspectRatio = MediaQuery.of(context).size.height / MediaQuery.of(context).size.width;
-    }
 
     _chewieController = ChewieController(
       videoPlayerController: widget.controller,
       autoPlay: true,
       looping: false,
-      aspectRatio: aspectRatio, // Set the aspect ratio here
       // Add more customization options here as needed.
     );
+  }
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initPlatformState() async {
+    String platformVersion;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    // We also handle the message potentially returning null.
+    try {
+      platformVersion =
+          await AsyncWallpaper.platformVersion ?? 'Unknown platform version';
+    } on PlatformException {
+      platformVersion = 'Failed to get platform version.';
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      _platformVersion = platformVersion;
+    });
+  }
+
+  Future<void> setLiveWallpaper() async {
+    setState(() {
+      _liveWallpaper = 'Loading';
+    });
+    String result;
+
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await AsyncWallpaper.setLiveWallpaper(
+        filePath: widget.path,
+        goToHome: false,
+        toastDetails: ToastDetails.success(),
+        errorToastDetails: ToastDetails.error(),
+      )
+          ? 'Wallpaper set'
+          : 'Failed to set wallpaper.';
+    } on PlatformException {
+      result = 'Failed to set wallpaper.';
+      Fluttertoast.showToast(
+          msg: "This Device Doesn't Support Live Wallpaper!",
+          toastLength: Toast.LENGTH_SHORT);
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+
+    setState(() {
+      _liveWallpaper = result;
+    });
   }
 
   @override
@@ -61,10 +110,8 @@ class _VideoPlayerScreen2State extends State<VideoPlayerScreen2> {
       appBar: AppBar(
         title: Text('Video Player'),
         actions: [
-          IconButton(onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => ChangeWallpaper(path: widget.path
-              ,)));
-          }, icon: Icon(Icons.change_circle))
+          IconButton(
+              onPressed: setLiveWallpaper, icon: Icon(Icons.change_circle))
         ],
       ),
       body: Center(

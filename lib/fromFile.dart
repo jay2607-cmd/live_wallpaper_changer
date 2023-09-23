@@ -3,9 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_wallpaper/asset_videos.dart';
 
-import 'asset_videoplayer.dart';
 import 'file_video_player.dart';
 
 class FromFile extends StatefulWidget {

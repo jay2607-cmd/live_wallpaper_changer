@@ -16,9 +16,6 @@ class ChangeWallpaperState extends State<ChangeWallpaper> {
   String _platformVersion = 'Unknown';
   String _liveWallpaper = 'Unknown';
 
-  // Update the video file path to match your asset file.
-  String assetVideoPath = '/data/user/0/com.example.video_wallpaper/cache/file_picker/VID_20230915_170328.mp4';
-
   late bool goToHome;
 
   @override

@@ -3,21 +3,22 @@ import 'dart:io';
 import 'package:async_wallpaper/async_wallpaper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:video_wallpaper/change_wallpaper.dart';
 
-class VideoPlayerScreen extends StatefulWidget {
+class AssetVideoPlayer extends StatefulWidget {
   final String videoAssetPath;
 
-  VideoPlayerScreen({required this.videoAssetPath});
+  const AssetVideoPlayer({super.key, required this.videoAssetPath});
 
   @override
-  _VideoPlayerScreenState createState() => _VideoPlayerScreenState();
+  _AssetVideoPlayerState createState() => _AssetVideoPlayerState();
 }
 
-class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
+class _AssetVideoPlayerState extends State<AssetVideoPlayer> {
   late VideoPlayerController _videoPlayerController;
   late ChewieController _chewieController;
 
@@ -101,9 +102,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             : 'Failed to set wallpaper.';
       } else {
         result = 'File not found.';
+        Fluttertoast.showToast(msg: "File Not Found",toastLength: Toast.LENGTH_SHORT);
+
+
       }
     } on PlatformException {
       result = 'Failed to set wallpaper.';
+      Fluttertoast.showToast(msg: "This Device Doesn't Support Live Wallpaper!",toastLength: Toast.LENGTH_SHORT);
+
     }
 
     // If the widget was removed from the tree while the asynchronous platform

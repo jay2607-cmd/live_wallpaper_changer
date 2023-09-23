@@ -98,7 +98,7 @@ class _AssetVideosState extends State<AssetVideos> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => VideoPlayerScreen(videoAssetPath: videoItems[index].assetPath,)));
+                        builder: (context) => AssetVideoPlayer(videoAssetPath: videoItems[index].assetPath,)));
               },
               child: Card(
                 child: Column(

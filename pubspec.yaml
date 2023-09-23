@@ -42,6 +42,8 @@ dependencies:
   chewie: ^1.7.1
   video_thumbnail: ^0.5.3
   file_picker: ^5.5.0
+  ffmpeg_kit_flutter: ^6.0.3
+  fluttertoast: ^8.2.2
 
 
 dev_dependencies:
